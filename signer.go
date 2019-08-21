@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,46 +25,26 @@ func ExecutePipeline(in ...job) {
 	wg.Wait()
 }
 
-// func ExecutePipeline(in ...job) {
-// 	c := make(chan interface{}, 100)
-// 	pin := c
-// 	pout := c
-// 	wg := &sync.WaitGroup{}
-// 	for _, entry := range in {
-// 		pout = make(chan interface{}, 100)
-// 		wg.Add(1)
-
-// 		go func(wg *sync.WaitGroup, entry job, in, out chan interface{}) {
-// 			defer wg.Done()
-// 			defer close(out)
-
-// 			entry(in, out)
-// 		}(wg, entry, pin, pout)
-
-// 		pin = pout
-// 	}
-// 	wg.Wait()
-// }
-
 // CombineResults ...
 func CombineResults(in, out chan interface{}) {
-	var sortedInput []string
+	var sliceOfStrings []string
 	for input := range in {
-		sortedInput = append(sortedInput, input.(string))
+		sliceOfStrings = append(sliceOfStrings, input.(string))
 	}
-	result := strings.Join(sortedInput, "_")
+	sort.Strings(sliceOfStrings)
+	result := strings.Join(sliceOfStrings, "_")
 	fmt.Printf("Result is here: \n%s\n\n", result)
 	out <- result
 }
 
+// CombineResults получает все результаты, сортирует (https://golang.org/pkg/sort/), объединяет отсортированный результат через _ (символ подчеркивания) в одну строку
+
 // SingleHash ...
 func SingleHash(in, out chan interface{}) {
-	println("data", in)
 	for input := range in {
 		var str string
-		fmt.Printf("single got %d\n", input)
 		str = strconv.Itoa(int(input.(int)))
-		out <- DataSignerCrc32(str) + DataSignerCrc32(DataSignerMd5(str))
+		out <- DataSignerCrc32(str) + "~" + DataSignerCrc32(DataSignerMd5(str))
 	}
 }
 
